@@ -1,34 +1,44 @@
 version: "3"
 services:
-  cache:
+  redis:
     image: redis:alpine
     volumes:
-      - ${CACHE_DATA_DIR}:/data
-    command: redis-server --appendonly yes
-  db:
+      - redis:/data
+    command: ["redis-server", "--appendonly", "yes"]
+
+  postgres:
     image: postgres:alpine
     environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_USER: ${DB_USER}
+      POSTGRES_DB: webauthn
+      POSTGRES_PASSWORD: webauthn
+      POSTGRES_USER: webauthn
     volumes:
       - ./db/createtables.sql:/docker-entrypoint-initdb.d/createtables.sql
-      - ${DB_DATA_DIR}:/var/lib/postgresql/data
+      - postgres:/var/lib/postgresql/data
   web:
     build: .
     restart: on-failure
     ports:
       - 8443:8443
     environment:
-      DB_CONNSTRING: "dbname=${DB_NAME} user=${DB_USER} password=${DB_PASSWORD} host=db sslmode=disable"
-      REDIS_ADDR: cache:6379
+      DB_CONNSTRING: "dbname=webauthn user=webauthn password=webauthn host=postgres sslmode=disable"
+      REDIS_ADDR: redis:6379
       REDIS_NETWORK: tcp
       REDIS_PWD:
       SESSION_KEY:
     volumes:
-      - ${CERTS_DIR}:/opt/webauthn/certs 
+      - ./tlsfiles:/opt/webauthn/certs
       - ./config.json:/opt/webauthn/config/config.json
     depends_on:
-      - db
-      - cache
-    command: "-config=./config/config.json -cert=./certs/cert.pem -key=./certs/key.pem"
+      - postgres
+      - redis
+    command:
+      [
+        "-config=./config/config.json",
+        "-cert=./certs/tls.crt",
+        "-key=./certs/tls.key",
+      ]
+
+volumes:
+  postgres:
+  redis:
