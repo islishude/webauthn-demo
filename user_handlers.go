@@ -17,7 +17,7 @@ func (s *server) handleLogout(w http.ResponseWriter, r *http.Request) {
 		panic("Failed to get session data from context")
 	}
 	delete(session.Values, sessionMapKeyUserSession)
-	writeOKServerResponse(w)
+	_, _ = writeOKServerResponse(w)
 }
 
 func (s *server) handleUser() http.HandlerFunc {
@@ -36,13 +36,13 @@ func (s *server) handleUser() http.HandlerFunc {
 		}
 		uSession, ok := session.Values[sessionMapKeyUserSession].(*userSession)
 		if !ok {
-			writeFailedServerResponse(w, http.StatusUnauthorized, "Session doesn't have user credential")
+			_, _ = writeFailedServerResponse(w, http.StatusUnauthorized, "Session doesn't have user credential")
 			return
 		}
 
 		registeredAt, loggedInAt, err := s.dataStore.getCredentialTimestamp(r.Context(), uSession.User.UserID, uSession.LoggedInCredentialID)
 		if err != nil {
-			writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to find credential: "+err.Error())
+			_, _ = writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to find credential: "+err.Error())
 			return
 		}
 		resp := response{
@@ -55,10 +55,10 @@ func (s *server) handleUser() http.HandlerFunc {
 		}
 		b, err := json.Marshal(resp)
 		if err != nil {
-			writeFailedServerResponse(w, http.StatusInternalServerError, "failed to json marshal response body")
+			_, _ = writeFailedServerResponse(w, http.StatusInternalServerError, "failed to json marshal response body")
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(b)
+		_, _ = w.Write(b)
 	}
 }

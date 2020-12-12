@@ -15,6 +15,7 @@ services:
     volumes:
       - ./db/createtables.sql:/docker-entrypoint-initdb.d/createtables.sql
       - postgres:/var/lib/postgresql/data
+
   web:
     build: .
     restart: on-failure
@@ -27,16 +28,17 @@ services:
       REDIS_PWD:
       SESSION_KEY:
     volumes:
-      - ./tlsfiles:/opt/webauthn/certs
-      - ./config.json:/opt/webauthn/config/config.json
+      - ./tlsfiles:/app/certs
+      - ./static:/app/static
+      - ./config.json:/app/config.json
     depends_on:
       - postgres
       - redis
     command:
       [
-        "-config=./config/config.json",
-        "-cert=./certs/tls.crt",
-        "-key=./certs/tls.key",
+        "-config=/app/config.json",
+        "-cert=/app/certs/tls.crt",
+        "-key=/app/certs/tls.key",
       ]
 
 volumes:

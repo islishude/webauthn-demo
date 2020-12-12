@@ -18,10 +18,10 @@ const (
 		"userVerification": ""
 	}`
 
-	assertionOptionsRequestMissingUserName = `{
-		"username": "",
-		"userVerification": "preferred"
-	}`
+	// assertionOptionsRequestMissingUserName = `{
+	// 	"username": "",
+	// 	"userVerification": "preferred"
+	// }`
 
 	assertionOptionsSuccessResponse1 = `{
 		"status": "ok",

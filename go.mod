@@ -11,3 +11,5 @@ require (
 	github.com/stretchr/testify v1.6.1
 	gopkg.in/boj/redistore.v1 v1.0.0-20160128113310-fc113767cd6b
 )
+
+replace github.com/fxamacker/webauthn => github.com/islishude/webauthn v0.6.2-0.20200902032559-749a72969661

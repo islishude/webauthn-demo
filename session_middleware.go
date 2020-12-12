@@ -41,11 +41,11 @@ func (m *sessionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Get session data and store it in context.
 	if ctx, err = m.storeSessionInContext(ctx, r, m.rwSessionNames); err != nil {
-		writeFailedServerResponse(w, http.StatusInternalServerError, err.Error())
+		_, _ = writeFailedServerResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if ctx, err = m.storeSessionInContext(ctx, r, m.rSessionNames); err != nil {
-		writeFailedServerResponse(w, http.StatusInternalServerError, err.Error())
+		_, _ = writeFailedServerResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -114,11 +114,11 @@ func (s *server) loggedInUserOnly(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		loginSession, err := s.sessionStore.Get(r, sessionNameLoginSession)
 		if err != nil {
-			writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to retrieve session \""+sessionNameLoginSession+"\": "+err.Error())
+			_, _ = writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to retrieve session \""+sessionNameLoginSession+"\": "+err.Error())
 			return
 		}
 		if u, ok := loginSession.Values[sessionMapKeyUserSession].(*userSession); !ok || len(u.LoggedInCredentialID) == 0 {
-			writeFailedServerResponse(w, http.StatusUnauthorized, "User is not logged in")
+			_, _ = writeFailedServerResponse(w, http.StatusUnauthorized, "User is not logged in")
 			return
 		}
 		next(w, r)

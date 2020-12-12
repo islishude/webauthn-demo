@@ -30,11 +30,11 @@ func (s *server) handleAssertionOptions() http.HandlerFunc {
 		// Parse and verify request.
 		var optionsRequest request
 		if err := json.NewDecoder(r.Body).Decode(&optionsRequest); err != nil {
-			writeFailedServerResponse(w, http.StatusBadRequest, "Failed to json decode request body: "+err.Error())
+			_, _ = writeFailedServerResponse(w, http.StatusBadRequest, "Failed to json decode request body: "+err.Error())
 			return
 		}
 		if optionsRequest.Username == "" {
-			writeFailedServerResponse(w, http.StatusBadRequest, "Missing username")
+			_, _ = writeFailedServerResponse(w, http.StatusBadRequest, "Missing username")
 			return
 		}
 		if optionsRequest.UserVerification == "" {
@@ -44,18 +44,18 @@ func (s *server) handleAssertionOptions() http.HandlerFunc {
 		// Get user from datastore.
 		u, err := s.dataStore.getUser(r.Context(), optionsRequest.Username)
 		if err != nil && err != errNoRecords {
-			writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to query user in database: "+err.Error())
+			_, _ = writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to query user in database: "+err.Error())
 			return
 		}
 		if u == nil || u.UserID == nil {
-			writeFailedServerResponse(w, http.StatusBadRequest, optionsRequest.Username+" is not registered")
+			_, _ = writeFailedServerResponse(w, http.StatusBadRequest, optionsRequest.Username+" is not registered")
 			return
 		}
 
 		// Generate PublicKeyCredentialRequestOptions from WebAuthn config and user input.
 		requestOptions, err := webauthn.NewAssertionOptions(s.webAuthnConfig, &webauthn.User{ID: u.UserID, Name: u.UserName, DisplayName: u.DisplayName, CredentialIDs: u.CredentialIDs})
 		if err != nil {
-			writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to generate PublicKeyCredentialRequestOptions: "+err.Error())
+			_, _ = writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to generate PublicKeyCredentialRequestOptions: "+err.Error())
 			return
 		}
 		requestOptions.UserVerification = optionsRequest.UserVerification
@@ -71,11 +71,11 @@ func (s *server) handleAssertionOptions() http.HandlerFunc {
 		}
 		b, err := json.Marshal(getOptionsResponse)
 		if err != nil {
-			writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to json encode response body: "+err.Error())
+			_, _ = writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to json encode response body: "+err.Error())
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(b)
+		_, _ = w.Write(b)
 	}
 }
 
@@ -88,13 +88,13 @@ func (s *server) handleAssertionResult(w http.ResponseWriter, r *http.Request) {
 	savedRequestOptions, ok := session.Values[sessionMapKeyWebAuthnRequestOptions].(*webauthn.PublicKeyCredentialRequestOptions)
 	if !ok {
 		delete(session.Values, sessionMapKeyWebAuthnRequestOptions)
-		writeFailedServerResponse(w, http.StatusUnauthorized, "Session doesn't have PublicKeyCredentialRequestOptions data")
+		_, _ = writeFailedServerResponse(w, http.StatusUnauthorized, "Session doesn't have PublicKeyCredentialRequestOptions data")
 		return
 	}
 	uSession, ok := session.Values[sessionMapKeyUserSession].(*userSession)
 	if !ok {
 		delete(session.Values, sessionMapKeyWebAuthnRequestOptions)
-		writeFailedServerResponse(w, http.StatusUnauthorized, "Session doesn't have user data")
+		_, _ = writeFailedServerResponse(w, http.StatusUnauthorized, "Session doesn't have user data")
 		return
 	}
 
@@ -102,7 +102,7 @@ func (s *server) handleAssertionResult(w http.ResponseWriter, r *http.Request) {
 	credentialAssertion, err := webauthn.ParseAssertion(r.Body)
 	if err != nil {
 		delete(session.Values, sessionMapKeyWebAuthnRequestOptions)
-		writeFailedServerResponse(w, http.StatusBadRequest, "Failed to parse assertion: "+err.Error())
+		_, _ = writeFailedServerResponse(w, http.StatusBadRequest, "Failed to parse assertion: "+err.Error())
 		return
 	}
 
@@ -110,13 +110,13 @@ func (s *server) handleAssertionResult(w http.ResponseWriter, r *http.Request) {
 	c, err := s.dataStore.getCredential(r.Context(), uSession.User.UserID, credentialAssertion.RawID)
 	if err != nil {
 		delete(session.Values, sessionMapKeyWebAuthnRequestOptions)
-		writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to find credential: "+err.Error())
+		_, _ = writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to find credential: "+err.Error())
 		return
 	}
 	credKey, _, err := webauthn.ParseCredential(c.CoseKey)
 	if err != nil {
 		delete(session.Values, sessionMapKeyWebAuthnRequestOptions)
-		writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to create credential public key: "+err.Error())
+		_, _ = writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to create credential public key: "+err.Error())
 		return
 	}
 
@@ -137,7 +137,7 @@ func (s *server) handleAssertionResult(w http.ResponseWriter, r *http.Request) {
 	}
 	if err = webauthn.VerifyAssertion(credentialAssertion, expected); err != nil {
 		delete(session.Values, sessionMapKeyWebAuthnRequestOptions)
-		writeFailedServerResponse(w, http.StatusBadRequest, "Failed to verify assertion: "+err.Error())
+		_, _ = writeFailedServerResponse(w, http.StatusBadRequest, "Failed to verify assertion: "+err.Error())
 		return
 	}
 
@@ -145,7 +145,7 @@ func (s *server) handleAssertionResult(w http.ResponseWriter, r *http.Request) {
 	c.Counter = credentialAssertion.AuthnData.Counter
 	if err = s.dataStore.updateCredential(r.Context(), c); err != nil {
 		delete(session.Values, sessionMapKeyWebAuthnRequestOptions)
-		writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to update credential: "+err.Error())
+		_, _ = writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to update credential: "+err.Error())
 		return
 	}
 
@@ -154,5 +154,5 @@ func (s *server) handleAssertionResult(w http.ResponseWriter, r *http.Request) {
 	uSession.LoggedInCredentialID = credentialAssertion.RawID
 
 	// Write response.
-	writeOKServerResponse(w)
+	_, _ = writeOKServerResponse(w)
 }

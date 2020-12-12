@@ -89,6 +89,7 @@ func main() {
 	}
 
 	go func() {
+		log.Println("listen and serving...")
 		if err := server.ListenAndServeTLS(certFilePath, keyFilePath); err != http.ErrServerClosed {
 			// Error starting or closing listener
 			log.Printf("HTTP server ListenAndServeTLS: %v\n", err)

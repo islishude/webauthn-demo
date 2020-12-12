@@ -33,15 +33,15 @@ func (s *server) handleAttestationOptions() http.HandlerFunc {
 		// Parse and verify request.
 		var optionsRequest request
 		if err := json.NewDecoder(r.Body).Decode(&optionsRequest); err != nil {
-			writeFailedServerResponse(w, http.StatusBadRequest, "Failed to json decode request body: "+err.Error())
+			_, _ = writeFailedServerResponse(w, http.StatusBadRequest, "Failed to json decode request body: "+err.Error())
 			return
 		}
 		if optionsRequest.Username == "" {
-			writeFailedServerResponse(w, http.StatusBadRequest, "Missing username")
+			_, _ = writeFailedServerResponse(w, http.StatusBadRequest, "Missing username")
 			return
 		}
 		if optionsRequest.DisplayName == "" {
-			writeFailedServerResponse(w, http.StatusBadRequest, "Missing displayName")
+			_, _ = writeFailedServerResponse(w, http.StatusBadRequest, "Missing displayName")
 			return
 		}
 		if optionsRequest.AuthenticatorSelection.UserVerification == "" {
@@ -59,7 +59,7 @@ func (s *server) handleAttestationOptions() http.HandlerFunc {
 				DisplayName: optionsRequest.DisplayName,
 			}
 		} else if err != nil {
-			writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to query user in database: "+err.Error())
+			_, _ = writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to query user in database: "+err.Error())
 			return
 		}
 
@@ -67,10 +67,10 @@ func (s *server) handleAttestationOptions() http.HandlerFunc {
 		if u.UserID == nil {
 			u.UserID = make([]byte, 64) // user ID is 64 random bytes
 			if n, err := rand.Read(u.UserID); err != nil {
-				writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to generate user ID: "+err.Error())
+				_, _ = writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to generate user ID: "+err.Error())
 				return
 			} else if n != 64 {
-				writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to generate requested random bytes")
+				_, _ = writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to generate requested random bytes")
 				return
 			}
 		}
@@ -78,7 +78,7 @@ func (s *server) handleAttestationOptions() http.HandlerFunc {
 		// Generate PublicKeyCredentialCreationOptions from WebAuthn config and user input.
 		creationOptions, err := webauthn.NewAttestationOptions(s.webAuthnConfig, &webauthn.User{ID: u.UserID, Name: u.UserName, DisplayName: u.DisplayName, CredentialIDs: u.CredentialIDs})
 		if err != nil {
-			writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to generate PublicKeyCredentialCreationOptions: "+err.Error())
+			_, _ = writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to generate PublicKeyCredentialCreationOptions: "+err.Error())
 			return
 		}
 		creationOptions.AuthenticatorSelection = optionsRequest.AuthenticatorSelection
@@ -95,11 +95,11 @@ func (s *server) handleAttestationOptions() http.HandlerFunc {
 		}
 		b, err := json.Marshal(creationOptionsResponse)
 		if err != nil {
-			writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to json encode response body: "+err.Error())
+			_, _ = writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to json encode response body: "+err.Error())
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(b)
+		_, _ = w.Write(b)
 	}
 }
 
@@ -112,13 +112,13 @@ func (s *server) handleAttestationResult(w http.ResponseWriter, r *http.Request)
 	savedCreationOptions, ok := session.Values[sessionMapKeyWebAuthnCreationOptions].(*webauthn.PublicKeyCredentialCreationOptions)
 	if !ok {
 		delete(session.Values, sessionMapKeyWebAuthnCreationOptions)
-		writeFailedServerResponse(w, http.StatusUnauthorized, "Session doesn't have PublicKeyCredentialCreationOptions data")
+		_, _ = writeFailedServerResponse(w, http.StatusUnauthorized, "Session doesn't have PublicKeyCredentialCreationOptions data")
 		return
 	}
 	uSession, ok := session.Values[sessionMapKeyUserSession].(*userSession)
 	if !ok {
 		delete(session.Values, sessionMapKeyWebAuthnCreationOptions)
-		writeFailedServerResponse(w, http.StatusUnauthorized, "Session doesn't have user data")
+		_, _ = writeFailedServerResponse(w, http.StatusUnauthorized, "Session doesn't have user data")
 		return
 	}
 
@@ -126,7 +126,7 @@ func (s *server) handleAttestationResult(w http.ResponseWriter, r *http.Request)
 	credentialAttestation, err := webauthn.ParseAttestation(r.Body)
 	if err != nil {
 		delete(session.Values, sessionMapKeyWebAuthnCreationOptions)
-		writeFailedServerResponse(w, http.StatusBadRequest, "Failed to parse attestation: "+err.Error())
+		_, _ = writeFailedServerResponse(w, http.StatusBadRequest, "Failed to parse attestation: "+err.Error())
 		return
 	}
 	var credentialAlgs []int
@@ -145,7 +145,7 @@ func (s *server) handleAttestationResult(w http.ResponseWriter, r *http.Request)
 	_, _, err = webauthn.VerifyAttestation(credentialAttestation, expected)
 	if err != nil {
 		delete(session.Values, sessionMapKeyWebAuthnCreationOptions)
-		writeFailedServerResponse(w, http.StatusBadRequest, "Failed to verify attestation: "+err.Error())
+		_, _ = writeFailedServerResponse(w, http.StatusBadRequest, "Failed to verify attestation: "+err.Error())
 		return
 	}
 
@@ -158,11 +158,11 @@ func (s *server) handleAttestationResult(w http.ResponseWriter, r *http.Request)
 	}
 	if err = s.dataStore.addUserCredential(r.Context(), uSession.User, c); err == errRecordExists {
 		delete(session.Values, sessionMapKeyWebAuthnCreationOptions)
-		writeFailedServerResponse(w, http.StatusInternalServerError, "User credential exists in the system")
+		_, _ = writeFailedServerResponse(w, http.StatusInternalServerError, "User credential exists in the system")
 		return
 	} else if err != nil {
 		delete(session.Values, sessionMapKeyWebAuthnCreationOptions)
-		writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to save user credential: "+err.Error())
+		_, _ = writeFailedServerResponse(w, http.StatusInternalServerError, "Failed to save user credential: "+err.Error())
 		return
 	}
 
@@ -174,5 +174,5 @@ func (s *server) handleAttestationResult(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Write response.
-	writeOKServerResponse(w)
+	_, _ = writeOKServerResponse(w)
 }

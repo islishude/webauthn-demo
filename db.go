@@ -95,13 +95,13 @@ func (db *dbStore) addUserCredential(ctx context.Context, u *user, c *credential
 	}
 	_, err = tx.Exec(userQuery, u.UserID, u.UserName, u.DisplayName)
 	if err != nil {
-		tx.Rollback()
+		_ = tx.Rollback()
 		return err
 	}
 	now := time.Now()
 	res, err := tx.Exec(credentialQuery, c.CredentialID, c.UserID, c.Counter, c.CoseKey, now, now)
 	if err != nil {
-		tx.Rollback()
+		_ =	tx.Rollback()
 		return err
 	}
 	if err = tx.Commit(); err != nil {
