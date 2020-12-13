@@ -25,15 +25,15 @@ $("#register").submit(function (event) {
 
   getAttestationOptions(optionsRequest)
     .then((options) => {
-      console.log("options", options);
+      console.log("create options", options);
       return navigator.credentials.create({ publicKey: options });
     })
     .then((credential) => {
-      console.log("credential", credential);
+      console.log("create credential", credential);
       return sendAttestationResult(credential);
     })
     .then(() => {
-      if (confirm("successful!navigate to index page?")) {
+      if (confirm("navigate to index page?")) {
         window.location.href = "/";
       }
     })

@@ -18,13 +18,19 @@ $("#login").submit(function (event) {
 
   getAssertionOptions(optionsRequest)
     .then((options) => {
+      console.log("get options", options);
       return navigator.credentials.get({ publicKey: options });
     })
     .then((credential) => {
+      console.log("get credential", credential);
       return sendAssertionResult(credential);
     })
     .then(() => {
-      window.location.href = "/";
+      if (confirm("navigate to index?")) {
+        window.location.href = "/";
+      } else {
+        fetch("/logout", { credentials: "include" }).catch(null);
+      }
     })
     .catch((error) => alert(error));
 });
@@ -70,7 +76,9 @@ async function sendAssertionResult(credential) {
   credentialResponse["signature"] = base64url.encode(
     credential.response.signature
   );
-  credentialResponse["userHandle"] = credential.response.userHandle;
+  credentialResponse["userHandle"] =
+    credential.response.userHandle ??
+    base64url.encode(credential.response.userHandle);
   let resultRequest = {};
   resultRequest["id"] = credential.id;
   resultRequest["rawId"] = base64url.encode(credential.rawId);
