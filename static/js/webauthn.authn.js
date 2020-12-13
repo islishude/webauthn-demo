@@ -77,7 +77,7 @@ async function sendAssertionResult(credential) {
     credential.response.signature
   );
   credentialResponse["userHandle"] =
-    credential.response.userHandle ??
+    credential.response.userHandle &&
     base64url.encode(credential.response.userHandle);
   let resultRequest = {};
   resultRequest["id"] = credential.id;
