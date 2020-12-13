@@ -26,7 +26,7 @@ services:
       REDIS_ADDR: redis:6379
       REDIS_NETWORK: tcp
       REDIS_PWD:
-      SESSION_KEY:
+      SESSION_KEY: "AyvS4obA0OCYuUH0Re8yow"
     volumes:
       - ./tlsfiles:/app/certs
       - ./static:/app/static
