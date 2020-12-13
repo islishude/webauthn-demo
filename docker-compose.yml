@@ -18,7 +18,6 @@ services:
 
   web:
     build: .
-    restart: on-failure
     ports:
       - 8443:8443
     environment:
